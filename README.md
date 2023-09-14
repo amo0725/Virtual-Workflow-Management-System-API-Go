@@ -46,13 +46,13 @@ Virtual Workflow Management System is a RESTful API backend built in Go. It's de
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/virtual_workflow_management_system.git
+   git clone https://github.com/amo0725/Virtual-Workflow-Management-System-API-Go.git
    ```
 
 2. Change to project directory:
 
    ```bash
-   cd virtual_workflow_management_system
+   cd Virtual-Workflow-Management-System-API-Go
    ```
 
 3. Install dependencies:
