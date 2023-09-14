@@ -1,0 +1,501 @@
+definitions:
+  models.TaskStatus:
+    enum:
+    - Pending
+    - In Progress
+    - Completed
+    type: string
+    x-enum-varnames:
+    - Pending
+    - InProgress
+    - Completed
+  models.UserRole:
+    enum:
+    - Admin
+    - Employer
+    type: string
+    x-enum-varnames:
+    - Admin
+    - Employer
+  requests.CreateTaskRequest:
+    properties:
+      description:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - name
+    type: object
+  requests.CreateWorkflowRequest:
+    properties:
+      name:
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - name
+    type: object
+  requests.EditTaskRequest:
+    properties:
+      description:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 3
+        type: string
+      order:
+        type: integer
+      status:
+        $ref: '#/definitions/models.TaskStatus'
+    required:
+    - name
+    - order
+    - status
+    type: object
+  requests.EditWorkflowRequest:
+    properties:
+      name:
+        maxLength: 100
+        minLength: 3
+        type: string
+    type: object
+  requests.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  requests.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  requests.RegisterRequest:
+    properties:
+      password:
+        minLength: 6
+        type: string
+      role:
+        $ref: '#/definitions/models.UserRole'
+      username:
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - password
+    - role
+    - username
+    type: object
+info:
+  contact: {}
+paths:
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Login with the input payload
+      parameters:
+      - description: User for login
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/requests.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Login
+      tags:
+      - Users
+  /logout:
+    post:
+      consumes:
+      - application/json
+      description: Logout
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - access_token: []
+      summary: Logout
+      tags:
+      - Users
+  /refresh-token:
+    post:
+      consumes:
+      - application/json
+      description: Refresh token with the input payload
+      parameters:
+      - description: User for refresh token
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/requests.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Refresh token
+      tags:
+      - Users
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user with the input payload
+      parameters:
+      - description: User for registration
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/requests.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Invalid input
+          schema:
+            type: string
+      summary: Register a new user
+      tags:
+      - Users
+  /workflows:
+    get:
+      consumes:
+      - application/json
+      description: Get all workflows
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - access_token: []
+      summary: Get all workflows
+      tags:
+      - Workflows
+    post:
+      consumes:
+      - application/json
+      description: Create a new workflow with the input payload
+      parameters:
+      - description: Workflow for creation
+        in: body
+        name: workflow
+        required: true
+        schema:
+          $ref: '#/definitions/requests.CreateWorkflowRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Invalid input
+          schema:
+            type: string
+      security:
+      - access_token: []
+      summary: Create a new workflow
+      tags:
+      - Workflows
+  /workflows/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a workflow by ID
+      parameters:
+      - description: Workflow ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Invalid input
+          schema:
+            type: string
+      security:
+      - access_token: []
+      summary: Delete a workflow
+      tags:
+      - Workflows
+    get:
+      consumes:
+      - application/json
+      description: Get a workflow by ID
+      parameters:
+      - description: Workflow ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - access_token: []
+      summary: Get a workflow
+      tags:
+      - Workflows
+    put:
+      consumes:
+      - application/json
+      description: Edit an existing workflow with the input payload
+      parameters:
+      - description: Workflow ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Workflow for editing
+        in: body
+        name: workflow
+        required: true
+        schema:
+          $ref: '#/definitions/requests.EditWorkflowRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Invalid input
+          schema:
+            type: string
+      security:
+      - access_token: []
+      summary: Edit an existing workflow
+      tags:
+      - Workflows
+  /workflows/{id}/tasks:
+    get:
+      consumes:
+      - application/json
+      description: Get all tasks
+      parameters:
+      - description: Workflow ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - access_token: []
+      summary: Get all tasks
+      tags:
+      - Workflows
+    post:
+      consumes:
+      - application/json
+      description: Create a task with the input payload
+      parameters:
+      - description: Workflow ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Task for creation
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/requests.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Invalid input
+          schema:
+            type: string
+      security:
+      - access_token: []
+      summary: Create a task
+      tags:
+      - Workflows
+  /workflows/{id}/tasks/{taskID}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a task by ID
+      parameters:
+      - description: Workflow ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Task ID
+        in: path
+        name: taskID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Invalid input
+          schema:
+            type: string
+      security:
+      - access_token: []
+      summary: Delete a task
+      tags:
+      - Workflows
+    get:
+      consumes:
+      - application/json
+      description: Get a task by ID
+      parameters:
+      - description: Workflow ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Task ID
+        in: path
+        name: taskID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - access_token: []
+      summary: Get a task
+      tags:
+      - Workflows
+  /workflows/{id}/transfer/{username}:
+    put:
+      consumes:
+      - application/json
+      description: Transfer a workflow by ID
+      parameters:
+      - description: Workflow ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Invalid input
+          schema:
+            type: string
+      security:
+      - access_token: []
+      summary: Transfer a workflow
+      tags:
+      - Workflows
+  /workflows/{workflow_id}/tasks/{task_id}:
+    put:
+      consumes:
+      - application/json
+      description: Edit a task with the input payload
+      parameters:
+      - description: Workflow ID
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: Task for editing
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/requests.EditTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Invalid input
+          schema:
+            type: string
+      security:
+      - access_token: []
+      summary: Edit a task
+      tags:
+      - Workflows
+securityDefinitions:
+  access_token:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
