@@ -22,7 +22,13 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
-func JWTAuthMiddleware(redisClient *redis.Client) func(ctx *gin.Context) {
+type RedisClientInterface interface {
+	Get(ctx context.Context, key string) *redis.StringCmd
+	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.StatusCmd
+	Del(ctx context.Context, keys ...string) *redis.IntCmd
+}
+
+func JWTAuthMiddleware(redisClient RedisClientInterface) func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
 		accessToken := ctx.GetHeader("Authorization")
 		if len(accessToken) > 7 && accessToken[:7] == "Bearer " {
@@ -60,7 +66,7 @@ func JWTAuthMiddleware(redisClient *redis.Client) func(ctx *gin.Context) {
 	}
 }
 
-func GenerateJWTToken(user models.User, redisClient *redis.Client) (map[string]string, error) {
+func GenerateJWTToken(user models.User, redisClient RedisClientInterface) (map[string]string, error) {
 	err := godotenv.Load(".env")
 	if err != nil {
 		logrus.Error(err)
@@ -141,7 +147,7 @@ func ParseJWTToken(accessTokenString string) (*Claims, error) {
 	return nil, err
 }
 
-func RefreshJWTToken(refreshTokenString string, redisClient *redis.Client) (map[string]string, error) {
+func RefreshJWTToken(refreshTokenString string, redisClient RedisClientInterface) (map[string]string, error) {
 	claims, err := ParseJWTToken(refreshTokenString)
 	if err != nil {
 		logrus.Error(err)
@@ -181,7 +187,7 @@ func RefreshJWTToken(refreshTokenString string, redisClient *redis.Client) (map[
 	return newToken, nil
 }
 
-func DeleteJWTToken(username string, redisClient *redis.Client) error {
+func DeleteJWTToken(username string, redisClient RedisClientInterface) error {
 	_, err := redisClient.Del(context.Background(), "access_token_"+username).Result()
 	if err != nil {
 		logrus.Error("failed to delete access token in Redis: ", err)

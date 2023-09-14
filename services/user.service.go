@@ -15,19 +15,33 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type UserService struct {
+var UserService IUserService
+
+type userService struct {
 	userEntity repositories.IUser
 	redis      *redis.Client
 }
 
-func NewUserService(resource *databases.Resource) *UserService {
-	return &UserService{
+type IUserService interface {
+	Register(c *gin.Context, req requests.RegisterRequest)
+	Login(c *gin.Context, req requests.LoginRequest)
+	RefreshToken(c *gin.Context, req requests.RefreshTokenRequest)
+	Logout(username string) error
+	GetUsersByUsername(username string) (*models.User, error)
+}
+
+func NewUserService(resource *databases.Resource) IUserService {
+	if resource == nil || resource.MongoDB == nil || resource.Redis == nil {
+		return &userService{}
+	}
+	UserService = &userService{
 		userEntity: repositories.NewUserEntity(resource),
 		redis:      resource.Redis,
 	}
+	return UserService
 }
 
-func (service *UserService) Register(c *gin.Context, req requests.RegisterRequest) {
+func (service *userService) Register(c *gin.Context, req requests.RegisterRequest) {
 	reqWithHashedPassword := requests.RegisterRequest{
 		Username: req.Username,
 		Password: common.HashPassword(req.Password),
@@ -44,7 +58,7 @@ func (service *UserService) Register(c *gin.Context, req requests.RegisterReques
 	responses.Ok(c)
 }
 
-func (service *UserService) Login(c *gin.Context, req requests.LoginRequest) {
+func (service *userService) Login(c *gin.Context, req requests.LoginRequest) {
 	user, err := service.userEntity.FindOneByUsername(req.Username)
 	if err != nil {
 		logrus.Error(err)
@@ -75,7 +89,7 @@ func (service *UserService) Login(c *gin.Context, req requests.LoginRequest) {
 	})
 }
 
-func (service *UserService) RefreshToken(c *gin.Context, req requests.RefreshTokenRequest) {
+func (service *userService) RefreshToken(c *gin.Context, req requests.RefreshTokenRequest) {
 	jwt, err := middlewares.RefreshJWTToken(req.RefreshToken, service.redis)
 	if err != nil {
 		logrus.Error(err)
@@ -89,7 +103,7 @@ func (service *UserService) RefreshToken(c *gin.Context, req requests.RefreshTok
 	})
 }
 
-func (service *UserService) Logout(username string) error {
+func (service *userService) Logout(username string) error {
 
 	err := middlewares.DeleteJWTToken(username, service.redis)
 	if err != nil {
@@ -100,7 +114,7 @@ func (service *UserService) Logout(username string) error {
 	return nil
 }
 
-func (service *UserService) GetUsersByUsername(username string) (*models.User, error) {
+func (service *userService) GetUsersByUsername(username string) (*models.User, error) {
 	user, err := service.userEntity.FindOneByUsername(username)
 	if err != nil {
 		logrus.Error(err)

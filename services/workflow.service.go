@@ -12,19 +12,38 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type WorkflowService struct {
+var WorkflowService IWorkflowService
+
+type workflowService struct {
 	workflowEntity repositories.IWorkflow
 	mongoClient    *mongo.Client
 }
 
-func NewWorkflowService(resource *databases.Resource) *WorkflowService {
-	return &WorkflowService{
+type IWorkflowService interface {
+	GetWorkflows(username string) ([]models.Workflow, error)
+	GetWorkflowByID(workflowID string) (*models.Workflow, error)
+	CreateWorkflow(username string, req requests.CreateWorkflowRequest) (*string, error)
+	EditWorkflowByID(workflowID string, req requests.EditWorkflowRequest) (*models.Workflow, error)
+	DeleteWorkflowByID(workflowID string) error
+	TransferWorkflowByID(workflowID string, username string) (*models.Workflow, error)
+	GetTasksByWorkflowID(workflowID string) ([]models.Task, error)
+	GetTaskByID(workflowID string, taskID string) (*models.Task, error)
+	CreateTaskByWorkflowID(workflowID string, req requests.CreateTaskRequest) (*string, error)
+	EditTaskByID(workflowID string, taskID string, req requests.EditTaskRequest) (*models.Task, error)
+	DeleteTaskByID(workflowID string, taskID string) error
+}
+
+func NewWorkflowService(resource *databases.Resource) *workflowService {
+	if resource == nil || resource.MongoDB == nil || resource.Redis == nil {
+		return &workflowService{}
+	}
+	return &workflowService{
 		workflowEntity: repositories.NewWorkflowEntity(resource),
 		mongoClient:    resource.MongoDB.Client(),
 	}
 }
 
-func (service *WorkflowService) GetWorkflows(username string) ([]models.Workflow, error) {
+func (service *workflowService) GetWorkflows(username string) ([]models.Workflow, error) {
 	workflows, err := service.workflowEntity.FindWorkflowsByUsername(username)
 	if err != nil {
 		logrus.Error(err)
@@ -34,7 +53,7 @@ func (service *WorkflowService) GetWorkflows(username string) ([]models.Workflow
 	return workflows, nil
 }
 
-func (service *WorkflowService) GetWorkflowByID(workflowID string) (*models.Workflow, error) {
+func (service *workflowService) GetWorkflowByID(workflowID string) (*models.Workflow, error) {
 	workflow, err := service.workflowEntity.FindWorkflowByID(workflowID)
 	if err != nil {
 		logrus.Error(err)
@@ -44,7 +63,7 @@ func (service *WorkflowService) GetWorkflowByID(workflowID string) (*models.Work
 	return workflow, nil
 }
 
-func (service *WorkflowService) CreateWorkflow(username string, req requests.CreateWorkflowRequest) (*string, error) {
+func (service *workflowService) CreateWorkflow(username string, req requests.CreateWorkflowRequest) (*string, error) {
 	workflowModel := models.Workflow{
 		Name:  req.Name,
 		Tasks: []models.Task{},
@@ -60,7 +79,7 @@ func (service *WorkflowService) CreateWorkflow(username string, req requests.Cre
 	return insertedID, nil
 }
 
-func (service *WorkflowService) EditWorkflowByID(workflowID string, req requests.EditWorkflowRequest) (*models.Workflow, error) {
+func (service *workflowService) EditWorkflowByID(workflowID string, req requests.EditWorkflowRequest) (*models.Workflow, error) {
 	workflowModel := models.Workflow{
 		Name: req.Name,
 	}
@@ -74,7 +93,7 @@ func (service *WorkflowService) EditWorkflowByID(workflowID string, req requests
 	return workflow, nil
 }
 
-func (service *WorkflowService) DeleteWorkflowByID(workflowID string) error {
+func (service *workflowService) DeleteWorkflowByID(workflowID string) error {
 	if err := service.workflowEntity.DeleteWorkflow(workflowID); err != nil {
 		logrus.Error(err)
 		return err
@@ -82,7 +101,7 @@ func (service *WorkflowService) DeleteWorkflowByID(workflowID string) error {
 	return nil
 }
 
-func (service *WorkflowService) TransferWorkflowByID(workflowID string, username string) (*models.Workflow, error) {
+func (service *workflowService) TransferWorkflowByID(workflowID string, username string) (*models.Workflow, error) {
 	workflowModel := models.Workflow{
 		Owner: username,
 	}
@@ -96,7 +115,7 @@ func (service *WorkflowService) TransferWorkflowByID(workflowID string, username
 	return workflow, nil
 }
 
-func (service *WorkflowService) GetTasksByWorkflowID(workflowID string) ([]models.Task, error) {
+func (service *workflowService) GetTasksByWorkflowID(workflowID string) ([]models.Task, error) {
 	tasks, err := service.workflowEntity.FindTasksByWorkflowID(workflowID)
 	if err != nil {
 		logrus.Error(err)
@@ -106,7 +125,7 @@ func (service *WorkflowService) GetTasksByWorkflowID(workflowID string) ([]model
 	return tasks, nil
 }
 
-func (service *WorkflowService) GetTaskByID(workflowID string, taskID string) (*models.Task, error) {
+func (service *workflowService) GetTaskByID(workflowID string, taskID string) (*models.Task, error) {
 	task, err := service.workflowEntity.FindTaskByID(workflowID, taskID)
 	if err != nil {
 		logrus.Error(err)
@@ -116,7 +135,7 @@ func (service *WorkflowService) GetTaskByID(workflowID string, taskID string) (*
 	return task, nil
 }
 
-func (service *WorkflowService) CreateTaskByWorkflowID(workflowID string, req requests.CreateTaskRequest) (*string, error) {
+func (service *workflowService) CreateTaskByWorkflowID(workflowID string, req requests.CreateTaskRequest) (*string, error) {
 	var insertedID *string
 	err := common.WithTransaction(context.TODO(), service.mongoClient, func(c context.Context, session mongo.Session) error {
 		maxOrder, err := service.workflowEntity.FindMaxTaskOrderByWorkflowID(workflowID)
@@ -151,7 +170,7 @@ func (service *WorkflowService) CreateTaskByWorkflowID(workflowID string, req re
 	return insertedID, nil
 }
 
-func (service *WorkflowService) EditTaskByID(workflowID string, taskID string, req requests.EditTaskRequest) (*models.Task, error) {
+func (service *workflowService) EditTaskByID(workflowID string, taskID string, req requests.EditTaskRequest) (*models.Task, error) {
 	taskModel := models.Task{
 		Name:        req.Name,
 		Description: req.Description,
@@ -168,7 +187,7 @@ func (service *WorkflowService) EditTaskByID(workflowID string, taskID string, r
 	return task, nil
 }
 
-func (service *WorkflowService) DeleteTaskByID(workflowID string, taskID string) error {
+func (service *workflowService) DeleteTaskByID(workflowID string, taskID string) error {
 	if err := service.workflowEntity.DeleteTaskByID(workflowID, taskID); err != nil {
 		logrus.Error(err)
 		return err

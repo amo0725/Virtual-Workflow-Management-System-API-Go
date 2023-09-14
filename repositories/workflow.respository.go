@@ -37,6 +37,9 @@ type IWorkflow interface {
 }
 
 func NewWorkflowEntity(resource *databases.Resource) IWorkflow {
+	if resource == nil || resource.MongoDB == nil || resource.Redis == nil {
+		return &workflowEntity{}
+	}
 	workflowRepository := resource.MongoDB.Collection("workflows")
 	WorkflowEntity = &workflowEntity{resource: resource, repository: workflowRepository, mongoClient: resource.MongoDB.Client()}
 	return WorkflowEntity

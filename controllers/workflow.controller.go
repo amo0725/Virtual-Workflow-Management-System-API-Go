@@ -11,8 +11,8 @@ import (
 )
 
 type WorkflowController struct {
-	WorkflowService *services.WorkflowService
-	UserService     *services.UserService
+	WorkflowService services.IWorkflowService
+	UserService     services.IUserService
 }
 
 func NewWorkflowController(resource *databases.Resource) *WorkflowController {

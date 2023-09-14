@@ -24,6 +24,9 @@ type IUser interface {
 }
 
 func NewUserEntity(resource *databases.Resource) IUser {
+	if resource == nil || resource.MongoDB == nil || resource.Redis == nil {
+		return &userEntity{}
+	}
 	userRepository := resource.MongoDB.Collection("users")
 	UserEntity = &userEntity{resource: resource, repository: userRepository}
 	return UserEntity
